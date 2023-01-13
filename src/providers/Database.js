@@ -45,7 +45,7 @@ class DB extends Map {
         saveTime: 0,
         noLog: false
     }) {
-        let _db = new Map(Object.entries(JSON.parse(fs.readFileSync(db_path).toString() ?? "{}")));
+        let _db = super(Object.entries(JSON.parse(fs.readFileSync(db_path).toString() ?? "{}")));
 
         function bake(d) {
             let vv = "{", i = 0;
