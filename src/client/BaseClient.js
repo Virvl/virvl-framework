@@ -6,6 +6,7 @@ const Collection = require('../util/Collection');
 const RESTManager = require('../rest/RESTManager');
 const { DefaultOptions } = require('../util/Constants');
 const Util = require('../util/Util');
+const fs = require('fs');
 
 /**
  * The base class for all clients.
@@ -56,13 +57,21 @@ class BaseClient extends EventEmitter {
   }
 
   registerStores() {
+    const { stores } = this.options;
     [{
       name: 'events',
       file: 'EventStore',
-      dir: [...new Set([DefaultOptions.stores.events, this.options.stores.events])]
-    }].map(store => {
-      this.stores.set(store.name, new (require(`../stores/${store.file}`))(this));
-      this[store.name] = this.stores.get(store.name).events;
+      dir: [...new Set([].concat(DefaultOptions.stores.events,
+        Array.isArray(stores.events) ? [...stores.events] : stores.events))]
+    }].forEach(store => {
+      const newStore = new (require(`../stores/${store.file}`))(this);
+      this.stores.set(store.name, );
+      this[store.name] = newStore.events;
+
+      newStore.registerAll([].concat(...store.dir.map(dir => [
+        dir, fs.readdirSync(dir)
+      ]).map(files => files[1].filter(file => file.endsWith('.js')).map(file =>
+        require(`${files[0]}/${file}`)))));
     });
     return this;
   }
@@ -134,27 +143,6 @@ class BaseClient extends EventEmitter {
   clearInterval(interval) {
     clearInterval(interval);
     this._intervals.delete(interval);
-  }
-
-  /**
-   * Sets an immediate that will be automatically cancelled if the client is destroyed.
-   * @param {Function} fn Function to execute
-   * @param {...*} args Arguments for the function
-   * @returns {Immediate}
-   */
-  setImmediate(fn, ...args) {
-    const immediate = setImmediate(fn, ...args);
-    this._immediates.add(immediate);
-    return immediate;
-  }
-
-  /**
-   * Clears an immediate.
-   * @param {Immediate} immediate Immediate to cancel
-   */
-  clearImmediate(immediate) {
-    clearImmediate(immediate);
-    this._immediates.delete(immediate);
   }
 
   /**
